@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Kabupaten;
@@ -10,9 +11,28 @@ class PatientController extends Controller
 {
     public function show(Request $request){
 
-        $response = $this->fetch_data_visit($request->all());
+        $payload_request = $request->all();
 
-        return response()->json($response)->header('Content-Type', 'application/json');
+        $validator = Validator::make($payload_request, [
+            'tipe' => 'required',
+            'tgl_awal' => 'required',
+            'tgl_akhir' => 'required',
+            'kategori' => 'required',
+            'kabupaten' => 'required'
+        ]);
+
+        if($validator->fails()){
+            $response = [
+                "status" => "Failed",
+                "details" => $validator->errors()
+            ];
+            $status_code = 422;
+        } else {
+            $response = $this->fetch_data_visit($payload_request);
+            $status_code = 200;
+        }
+
+        return response()->json($response, $status_code)->header('Content-Type', 'application/json');
     }
 
     public function fetch_data_visit($request = array()){
@@ -28,38 +48,6 @@ class PatientController extends Controller
 
         $waktu = $this->tgl_indo($tgl_awal)." s.d ".$this->tgl_indo($tgl_akhir);
 
-        $sql_query = "SELECT * FROM (
-            SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
-            FROM dc_pendaftaran
-            INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
-            INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
-            INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-            WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
-            GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
-            UNION ALL
-            SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
-            FROM dc_pendaftaran
-            INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
-            INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
-            INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-            WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
-            GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
-            UNION ALL
-            SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
-            FROM dc_pendaftaran
-            INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
-            INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
-            INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-            WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
-            GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
-        ) AS q 
-        ORDER BY kecamatan ASC, kelurahan ASC;
-        ";
-
-        $result = DB::select($sql_query);
-        $data = array();
-        $sub_area = array();
-
         $parameter= [
             "tipe"=> $tipe,
             "waktu"=> $waktu,
@@ -67,43 +55,90 @@ class PatientController extends Controller
             "area"=> $nama_kabupaten
         ];
 
-        $persentase_wilayah=array();
+        if(strcasecmp($kategori, "Kelurahan") == 0){
 
-        $sub_rawat_jalan = $this->total_rawat_jalan($request);
-
-        $sub_area = $this->fetch_data_kelurahan($result);
-
-        foreach($this->fetch_data_kecamatan($result) as $row => $value){
-
-            $total=0;
-            if(sizeof($sub_area[$value]) > 0){
-                for($i=0;$i<sizeof($sub_area[$value]);$i++){
-                    $total += $sub_area[$value][$i]['total'];
+            $sql_query = "SELECT * FROM (
+                SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
+                FROM dc_pendaftaran
+                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
+                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
+                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+                GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
+                UNION ALL
+                SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
+                FROM dc_pendaftaran
+                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
+                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
+                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+                GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
+                UNION ALL
+                SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
+                FROM dc_pendaftaran
+                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
+                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
+                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+                GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
+            ) AS q 
+            ORDER BY kecamatan ASC, kelurahan ASC;
+            ";
+    
+            $result = DB::select($sql_query);
+            $data = array();
+            $sub_area = array();
+    
+            $persentase_wilayah=array();
+    
+            $sub_rawat_jalan = $this->total_rawat_jalan($request);
+    
+            $sub_area = $this->fetch_data_kelurahan($result);
+    
+            foreach($this->fetch_data_kecamatan($result) as $row => $value){
+    
+                $total=0;
+                if(sizeof($sub_area[$value]) > 0){
+                    for($i=0;$i<sizeof($sub_area[$value]);$i++){
+                        $total += $sub_area[$value][$i]['total'];
+                    }
+                } else{
+                    $total = $sub_area[$value][0]['total'];
                 }
-            } else{
-                $total = $sub_area[$value][0]['total'];
+    
+                $label = number_format((($total/$sub_rawat_jalan["total"])*100), 2, '.', '')." %";
+                $persentase_wilayah[] = array(
+                    "value"=>$value, 
+                    "label" => $label
+                );
+                
+                $data[] = array(
+                    "area" => $value,
+                    "sub_area" => $sub_area[$value], 
+                    "total" => $total
+                );
             }
 
-            $label = number_format((($total/$sub_rawat_jalan["total"])*100), 2, '.', '')." %";
-            $persentase_wilayah[] = array(
-                "value"=>$value, 
-                "label" => $label
-            );
-            
-            $data[] = array(
-                "area" => $value,
-                "sub_area" => $sub_area[$value], 
-                "total" => $total
-            );
+            $response = [
+                "status" => "OK",
+                "parameter" => $parameter,
+                "persentase_wilayah" => $persentase_wilayah,
+                "sub_rawat_jalan" => $sub_rawat_jalan["data"],
+                "data" => $data
+            ];
+
+        } else {
+            $response = [
+                "status" => "GAGAL",
+                "parameter" => $parameter,
+                "persentase_wilayah" => array(),
+                "sub_rawat_jalan" => array(),
+                "message" => "Data tidak ditemukan, input kategori dengan kelurahan.",
+                "data" => array()
+            ];
         }
 
-        return [
-            "status" => "OK",
-            "parameter" => $parameter,
-            "persentase_wilayah" => $persentase_wilayah,
-            "sub_rawat_jalan" => $sub_rawat_jalan["data"],
-            "data" => $data
-        ];
+        return $response;
     }
 
     public function total_rawat_jalan($request = array()){
