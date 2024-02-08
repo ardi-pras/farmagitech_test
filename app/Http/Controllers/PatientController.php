@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Kabupaten;
 
 class PatientController extends Controller
 {
@@ -22,6 +23,9 @@ class PatientController extends Controller
         $kategori = $request["kelurahan"];
         $kabupaten = $request["kabupaten"];
 
+        $kab = Kabupaten::where('id', $kabupaten)->first();
+        $nama_kabupaten = (!empty($kab))?$kab->nama:"Nama kabupaten tidak ditemukan.";
+
         $waktu = $this->tgl_indo($tgl_awal)." s.d ".$this->tgl_indo($tgl_akhir);
 
         $sql_query = "SELECT * FROM (
@@ -30,8 +34,7 @@ class PatientController extends Controller
             INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
             INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
             INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-            INNER JOIN dc_kabupaten ON dc_kabupaten.id=dc_kecamatan.id_kabupaten
-            WHERE dc_kabupaten.nama='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+            WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
             GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
             UNION ALL
             SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
@@ -39,8 +42,7 @@ class PatientController extends Controller
             INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
             INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
             INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-            INNER JOIN dc_kabupaten ON dc_kabupaten.id=dc_kecamatan.id_kabupaten
-            WHERE dc_kabupaten.nama='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+            WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
             GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
             UNION ALL
             SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
@@ -48,24 +50,22 @@ class PatientController extends Controller
             INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
             INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
             INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-            INNER JOIN dc_kabupaten ON dc_kabupaten.id=dc_kecamatan.id_kabupaten
-            WHERE dc_kabupaten.nama='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+            WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
             GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
         ) AS q 
         ORDER BY kecamatan ASC, kelurahan ASC;
         ";
 
         $result = DB::select($sql_query);
+        $data = array();
+        $sub_area = array();
 
         $parameter= [
             "tipe"=> $tipe,
             "waktu"=> $waktu,
             "kategori"=> $kategori,
-            "area"=> $kabupaten
+            "area"=> $nama_kabupaten
         ];
-
-        $data = array();
-        $sub_area = array();
 
         $persentase_wilayah=array();
 
@@ -118,8 +118,7 @@ class PatientController extends Controller
                 INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
                 INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
                 INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-                INNER JOIN dc_kabupaten ON dc_kabupaten.id=dc_kecamatan.id_kabupaten
-                WHERE dc_kabupaten.nama='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
                 GROUP BY dc_pendaftaran.jenis
                 UNION ALL
                 SELECT dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
@@ -127,8 +126,7 @@ class PatientController extends Controller
                 INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
                 INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
                 INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-                INNER JOIN dc_kabupaten ON dc_kabupaten.id=dc_kecamatan.id_kabupaten
-                WHERE dc_kabupaten.nama='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
                 GROUP BY dc_pendaftaran.jenis
                 UNION ALL
                 SELECT dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
@@ -136,8 +134,7 @@ class PatientController extends Controller
                 INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
                 INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
                 INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-                INNER JOIN dc_kabupaten ON dc_kabupaten.id=dc_kecamatan.id_kabupaten
-                WHERE dc_kabupaten.nama='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
                 GROUP BY dc_pendaftaran.jenis
             ) AS q;
         ";
