@@ -13,4 +13,4 @@ Langkah-langkah untuk menjalankan aplikasi, sebagai berikut:
     - kategori:Kelurahan
     - kabupaten:10
 
-![alt tag](https://github.com/ardi-pras/farmagitech_test/blob/master/payload_response_test_farmagitechs.png)
+<!-- ![alt tag](https://github.com/ardi-pras/farmagitech_test/blob/master/payload_response_test_farmagitechs.png) -->
