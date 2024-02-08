@@ -20,7 +20,7 @@ class PatientController extends Controller
         $tipe = $request["tipe"];
         $tgl_awal = $request["tgl_awal"];
         $tgl_akhir = $request["tgl_akhir"];
-        $kategori = $request["kelurahan"];
+        $kategori = $request["kategori"];
         $kabupaten = $request["kabupaten"];
 
         $kab = Kabupaten::where('id', $kabupaten)->first();

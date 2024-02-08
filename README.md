@@ -10,5 +10,5 @@ Langkah-langkah untuk menjalankan aplikasi, sebagai berikut:
     - tipe:harian
     - tgl_awal:2022-01-01
     - tgl_akhir:2022-10-31
-    - kelurahan:Kelurahan
+    - kategori:Kelurahan
     - kabupaten:10
