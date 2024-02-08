@@ -13,4 +13,4 @@ Langkah-langkah untuk menjalankan aplikasi, sebagai berikut:
     - kategori:Kelurahan
     - kabupaten:10
 
-![alt tag](https://i.stack.imgur.com/h9beB.png)
+![alt tag](https://bit.ly/3Uy8b9z)
