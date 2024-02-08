@@ -12,3 +12,5 @@ Langkah-langkah untuk menjalankan aplikasi, sebagai berikut:
     - tgl_akhir:2022-10-31
     - kategori:Kelurahan
     - kabupaten:10
+
+![alt tag](https://i.stack.imgur.com/h9beB.png)
