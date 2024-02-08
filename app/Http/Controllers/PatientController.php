@@ -129,7 +129,7 @@ class PatientController extends Controller
 
         } else {
             $response = [
-                "status" => "GAGAL",
+                "status" => "OK",
                 "parameter" => $parameter,
                 "persentase_wilayah" => array(),
                 "sub_rawat_jalan" => array(),
