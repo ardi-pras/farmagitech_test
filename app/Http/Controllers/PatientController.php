@@ -57,32 +57,43 @@ class PatientController extends Controller
 
         if(strcasecmp($kategori, "Kelurahan") == 0){
 
-            $sql_query = "SELECT * FROM (
-                SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
-                FROM dc_pendaftaran
-                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
-                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
-                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
-                GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
-                UNION ALL
-                SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
-                FROM dc_pendaftaran
-                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
-                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
-                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
-                GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
-                UNION ALL
-                SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
-                FROM dc_pendaftaran
-                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
-                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
-                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
-                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
-                GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
-            ) AS q 
-            ORDER BY kecamatan ASC, kelurahan ASC;
+            // $sql_query = "SELECT * FROM (
+            //     SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
+            //     FROM dc_pendaftaran
+            //     INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
+            //     INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
+            //     INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
+            //     WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+            //     GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
+            //     UNION ALL
+            //     SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
+            //     FROM dc_pendaftaran
+            //     INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
+            //     INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
+            //     INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
+            //     WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd<>'Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+            //     GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
+            //     UNION ALL
+            //     SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, dc_pendaftaran.jenis, dc_pendaftaran.jenis_igd, COUNT(dc_pendaftaran.id) AS total 
+            //     FROM dc_pendaftaran
+            //     INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien
+            //     INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan
+            //     INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan
+            //     WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND dc_pendaftaran.jenis='IGD' AND dc_pendaftaran.jenis_igd='Kamar Bersalin' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."'
+            //     GROUP BY dc_kelurahan.id, dc_pendaftaran.jenis
+            // ) AS q 
+            // ORDER BY kecamatan ASC, kelurahan ASC;
+            // ";
+
+            $sql_query = "SELECT dc_kecamatan.nama AS kecamatan, dc_kelurahan.nama AS kelurahan, 
+                COUNT(CASE WHEN dc_pendaftaran.jenis LIKE 'Poliklinik' AND dc_pendaftaran.jenis_igd IS NULL THEN 1 END) AS poliklinik, 
+                COUNT(CASE WHEN dc_pendaftaran.jenis LIKE 'IGD' AND dc_pendaftaran.jenis_igd NOT LIKE 'Kamar Bersalin' THEN 1 END) AS igd, 
+                COUNT(CASE WHEN dc_pendaftaran.jenis LIKE 'IGD' AND dc_pendaftaran.jenis_igd LIKE 'Kamar Bersalin' THEN 1 END) AS kb
+                FROM dc_pendaftaran 
+                INNER JOIN dc_pasien ON dc_pasien.id=dc_pendaftaran.id_pasien 
+                INNER JOIN dc_kelurahan ON dc_kelurahan.id=dc_pasien.id_kelurahan 
+                INNER JOIN dc_kecamatan ON dc_kecamatan.id=dc_kelurahan.id_kecamatan 
+                WHERE dc_kecamatan.id_kabupaten='".$kabupaten."' AND DATE(dc_pendaftaran.waktu_daftar) BETWEEN '".$tgl_awal."' AND '".$tgl_akhir."' GROUP BY dc_kelurahan.id;
             ";
     
             $result = DB::select($sql_query);
@@ -221,23 +232,23 @@ class PatientController extends Controller
         foreach($result as $row){
             $kec = $row->kecamatan;
             $kel = $row->kelurahan;
-            $jenis = $row->jenis;
-            $jenis_igd = $row->jenis_igd;
+            // $jenis = $row->jenis;
+            // $jenis_igd = $row->jenis_igd;
 
-            $tot_poli=0;
-            $tot_igd=0;
-            $tot_kb=0;
-            $total=0;
-
-            if($jenis=="Poliklinik" and $jenis_igd==""){
-                $tot_poli = $row->total;
-            } else if($jenis == "IGD" and $jenis_igd!="Kamar Bersalin"){
-                $tot_igd = $row->total;
-            } else if($jenis == "IGD" and $jenis_igd=="Kamar Bersalin") {
-                $tot_kb = $row->total;
-            }
-
+            $tot_poli=$row->poliklinik;
+            $tot_igd=$row->igd;
+            $tot_kb=$row->kb;
             $total=$tot_poli+$tot_igd+$tot_kb;
+
+            // if($jenis=="Poliklinik" and $jenis_igd==""){
+            //     $tot_poli = $row->total;
+            // } else if($jenis == "IGD" and $jenis_igd!="Kamar Bersalin"){
+            //     $tot_igd = $row->total;
+            // } else if($jenis == "IGD" and $jenis_igd=="Kamar Bersalin") {
+            //     $tot_kb = $row->total;
+            // }
+
+            // $total=$tot_poli+$tot_igd+$tot_kb;
 
             $sub_area[$kec][] = array(
                 "nama" => $kel ,
